@@ -623,6 +623,15 @@
 
       callOrQueue(self, queue, fn);
       return self;
+    } else {
+      // transition to 'height: auto' and 'width: auto' properly
+      for (var j = 0; j < this.length; j++) {
+        var elem = this.eq(j);
+        $.each(theseProperties, function(key) {
+          var value = elem.css(key);
+          elem.css(key, value);
+        });
+      }
     }
 
     // Save the old transitions of each element so we can restore it later.
@@ -633,6 +642,10 @@
 
       // Prepare the callback.
       var cb = function() {
+        $.each(finalProperties, function(key) {
+          self.css(key, finalProperties[key]);
+        });
+        
         if (bound) { self.unbind(transitionEnd, cb); }
 
         if (i > 0) {
@@ -653,13 +666,28 @@
         // Fallback to timers if the 'transitionend' event isn't supported.
         window.setTimeout(cb, i);
       }
+      
+      var finalProperties = {};
 
       // Apply transitions.
       self.each(function() {
+        var elem = $(this);
+
+        $.each(theseProperties, function(key) {
+          var value = theseProperties[key];
+          if (value === '' || value === 'auto') {
+            finalProperties[key] = value;
+            var prev = elem.css(key);
+            elem.css(key, value);
+            theseProperties[key] = elem.css(key);
+            elem.css(key, prev);
+          }
+        });
         if (i > 0) {
+          this.offsetWidth; // force a repaint
           this.style[support.transition] = transitionValue;
         }
-        $(this).css(theseProperties);
+        elem.css(theseProperties);
       });
     };
 
